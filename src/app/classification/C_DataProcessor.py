@@ -17,12 +17,6 @@ class C_DataProcessor:
 
         self.df = pd.read_csv(self.input_dataset_file_path)
 
-    def getMaliciousActivities(self):
-        if 'Label' in self.df.columns:
-            self.df = self.df[self.df['Label'] != 'Benign']
-        else:
-            print("Warning: Column 'Label' not found in data.")
-
     def dataAnalysis(self):
         total_records = len(self.df)
         label_counts = self.df['Attack Type'].value_counts(dropna=False)
@@ -43,6 +37,11 @@ class C_DataProcessor:
         print(f"Data analysis saved in file '{self.dataset_info_file_path}'.")
 
     def filterData(self):
+        if 'Label' in self.df.columns:
+            self.df = self.df[self.df['Label'] != 'Benign']
+        else:
+            print("Warning: Column 'Label' not found in data.")
+
         selected_columns = [
             'TotBytes',
             'SrcBytes',
@@ -68,13 +67,17 @@ class C_DataProcessor:
             print(f"Warning: The following columns were not found in file '{self.input_dataset_file_path}':", missing_columns)
 
         existing_columns = [col for col in selected_columns if col in self.df.columns]
-        df_selected = self.df[existing_columns]
-        df_selected.to_csv(self.output_dataset_file_path, index=False)
+        self.df = self.df[self.df['Attack Type'] != 'UDPScan']
+        self.df = self.df[existing_columns]
+        self.df.to_csv(self.output_dataset_file_path, index=False)
         print(f"Selected columns are saved in file '{self.output_dataset_file_path}'.")
-        return df_selected
+        return self.df
 
     def allSteps(self):
         dpFC = C_DataProcessor()
-        dpFC.getMaliciousActivities()
         dpFC.dataAnalysis()
         dpFC.filterData()
+"""
+x = C_DataProcessor()
+x.allSteps()
+"""

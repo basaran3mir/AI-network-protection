@@ -62,12 +62,17 @@ class D_DataProcessor:
             print(f"Warning: The following columns were not found in file '{self.input_dataset_file_path}':", missing_columns)
 
         existing_columns = [col for col in selected_columns if col in self.df.columns]
-        df_selected = self.df[existing_columns]
-        df_selected.to_csv(self.output_dataset_file_path, index=False)
+        self.df = self.df[self.df['Attack Type'] != 'UDPScan']
+        self.df = self.df[existing_columns]
+        self.df.to_csv(self.output_dataset_file_path, index=False)
         print(f"Selected columns are saved in file '{self.output_dataset_file_path}'.")
-        return df_selected
+        return self.df
 
     def allSteps(self):
         dpFD = D_DataProcessor()
         dpFD.dataAnalysis()
         dpFD.filterData()
+""" 
+x = D_DataProcessor()
+x.allSteps()
+"""

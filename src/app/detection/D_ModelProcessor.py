@@ -176,3 +176,7 @@ class D_ModelProcessor:
 
     def predict_proba(self, X):
         return self.model.predict_proba(X)
+"""
+x = D_ModelProcessor()
+x.train_model()
+"""

@@ -1,15 +1,16 @@
 General Dataset Information
-Total number of malicious records: 738153
+Total number of malicious records: 1215890
 
 Attack Type Distribution
-UDPFlood: 457340 (61.96%)
-HTTPFlood: 140812 (19.08%)
-SlowrateDoS: 73124 (9.91%)
-TCPConnectScan: 20052 (2.72%)
-SYNScan: 20043 (2.72%)
-UDPScan: 15906 (2.15%)
-SYNFlood: 9721 (1.32%)
-ICMPFlood: 1155 (0.16%)
+Benign: 477737 (39.29%)
+UDPFlood: 457340 (37.61%)
+HTTPFlood: 140812 (11.58%)
+SlowrateDoS: 73124 (6.01%)
+TCPConnectScan: 20052 (1.65%)
+SYNScan: 20043 (1.65%)
+UDPScan: 15906 (1.31%)
+SYNFlood: 9721 (0.80%)
+ICMPFlood: 1155 (0.09%)
 
 Column Data Types
 Unnamed: 0: int64
