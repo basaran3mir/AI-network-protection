@@ -1,0 +1,25 @@
+General Dataset Information
+Total number of records: 1199984
+
+Label Distribution
+Malicious: 722247 (60.19%)
+Benign: 477737 (39.81%)
+
+Column Data Types
+TotBytes: int64
+SrcBytes: int64
+DstBytes: int64
+TotPkts: int64
+SrcPkts: int64
+DstPkts: int64
+Rate: float64
+SrcRate: float64
+DstRate: float64
+Dur: float64
+RunTime: float64
+TcpRtt: float64
+SynAck: float64
+AckDat: float64
+Seq: int64
+Proto: object
+Label: object

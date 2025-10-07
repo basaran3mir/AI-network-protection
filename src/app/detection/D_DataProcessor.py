@@ -5,24 +5,26 @@ class D_DataProcessor:
 
     def __init__(self):
         self.input_dataset_file_path = 'src/res/datasets/Combined.csv'
-        self.dataset_info_file_path = 'src/outputs/datasets/detection/input_dataset_info.txt'
+        self.input_dataset_info_file_path = 'src/outputs/datasets/detection/input_dataset_info.txt'
         self.output_dataset_file_path = 'src/outputs/datasets/detection/Combined_output.csv'
+        self.output_dataset_info_file_path = 'src/outputs/datasets/detection/output_dataset_info.txt'
 
         for path in [
             self.input_dataset_file_path,
-            self.dataset_info_file_path,
-            self.output_dataset_file_path
+            self.input_dataset_info_file_path,
+            self.output_dataset_file_path,
+            self.output_dataset_info_file_path
         ]:
             os.makedirs(os.path.dirname(path), exist_ok=True)
 
         self.df = pd.read_csv(self.input_dataset_file_path)
 
-    def dataAnalysis(self):
+    def dataAnalysis(self, file_path):
         total_records = len(self.df)
         label_counts = self.df['Label'].value_counts(dropna=False)
         columns_info = self.df.dtypes
 
-        with open(self.dataset_info_file_path, 'w') as f:
+        with open(file_path, 'w') as f:
             f.write(f"General Dataset Information\n")
             f.write(f"Total number of records: {total_records}\n\n")
             
@@ -34,7 +36,7 @@ class D_DataProcessor:
             for col, dtype in columns_info.items():
                 f.write(f"{col}: {dtype}\n")
 
-        print(f"Data analysis saved in file '{self.dataset_info_file_path}'.")
+        print(f"Data analysis saved in file '{file_path}'.")
 
     def filterData(self):
         selected_columns = [
@@ -70,9 +72,10 @@ class D_DataProcessor:
 
     def allSteps(self):
         dpFD = D_DataProcessor()
-        dpFD.dataAnalysis()
+        dpFD.dataAnalysis(self.input_dataset_info_file_path)
         dpFD.filterData()
-""" 
+        dpFD.dataAnalysis(self.output_dataset_info_file_path)
+"""
 x = D_DataProcessor()
 x.allSteps()
 """

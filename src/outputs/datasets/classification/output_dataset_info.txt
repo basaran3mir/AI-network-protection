@@ -1,0 +1,30 @@
+General Dataset Information
+Total number of malicious records: 722247
+
+Attack Type Distribution
+UDPFlood: 457340 (63.32%)
+HTTPFlood: 140812 (19.50%)
+SlowrateDoS: 73124 (10.12%)
+TCPConnectScan: 20052 (2.78%)
+SYNScan: 20043 (2.78%)
+SYNFlood: 9721 (1.35%)
+ICMPFlood: 1155 (0.16%)
+
+Column Data Types
+TotBytes: int64
+SrcBytes: int64
+DstBytes: int64
+TotPkts: int64
+SrcPkts: int64
+DstPkts: int64
+Rate: float64
+SrcRate: float64
+DstRate: float64
+Dur: float64
+RunTime: float64
+TcpRtt: float64
+SynAck: float64
+AckDat: float64
+Seq: int64
+Proto: object
+Attack Type: object
