@@ -3,33 +3,51 @@ import requests
 
 API_PREDICT_URL = "http://10.0.0.239:5000/predict"
 
-sample_record = {
+sample_record1 = { #benign
     "SrcIp":      "0.0.0.0",
     "DstIp":      "0.0.0.0",
-    "TotBytes":   66,
-    "SrcBytes":   66,
-    "DstBytes":   0,
-    "TotPkts":    1,
-    "SrcPkts":    1,
-    "DstPkts":    0,
-    "Rate":       0.0,
-    "SrcRate":    0.0,
-    "DstRate":    0.0,
-    "Dur":        0.0,
-    "RunTime":    0.0,
+    "TotBytes":   249093,
+    "SrcBytes":   244212,
+    "DstBytes":   4881,
+    "TotPkts":    214,
+    "SrcPkts":    196,
+    "DstPkts":    18,
+    "Rate":       42.616875,
+    "SrcRate":    39.01545,
+    "DstRate":    3.401347,
+    "Dur":        4.99802,
+    "RunTime":    4.99802,
     "TcpRtt":     0.034051,
     "SynAck":     0.001364,
     "AckDat":     0.032687,
-    "Seq":        25012,
+    "Seq":        3,
     "Proto":       "udp",
 }
 
-proto_encoder = joblib.load("outputs/encoders/dc_proto_encoder.pkl")
-sample_record["Proto"] = int(proto_encoder.transform([sample_record["Proto"]])[0])
-print(sample_record)
+sample_record2 = { #malicious
+    "SrcIp":      "0.0.0.0",
+    "DstIp":      "0.0.0.0",
+    "TotBytes":   4529,
+    "SrcBytes":   714,
+    "DstBytes":   3815,
+    "TotPkts":    10,
+    "SrcPkts":    5,
+    "DstPkts":    5,
+    "Rate":       143.195816,
+    "SrcRate":    63.642586,
+    "DstRate":    63.642586,
+    "Dur":        0.062851,
+    "RunTime":    0.062851,
+    "TcpRtt":     0.03802,
+    "SynAck":     0.014252,
+    "AckDat":     0.023768,
+    "Seq":        844,
+    "Proto":       "tcp",
+}
+
 
 payload = {
-    "data": [ sample_record ]
+    "data": [ sample_record2 ]
 }
 
 resp = requests.post(API_PREDICT_URL, json=payload)

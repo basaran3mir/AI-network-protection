@@ -1,4 +1,5 @@
 import time
+import joblib
 import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -49,6 +50,9 @@ from app.classification.C_ModelProcessor import C_ModelProcessor as Classificati
 
 detection_model_processor = DetectionModel()
 classification_model_processor = ClassificationModel()
+proto_encoder = joblib.load("src/outputs/encoders/dc_proto_encoder.pkl")
+detection_label_encoder = joblib.load("src/outputs/encoders/d_label_encoder.pkl")
+classification_label_encoder = joblib.load("src/outputs/encoders/c_label_encoder.pkl")
 
 @app.route('/')
 def home():
@@ -76,13 +80,12 @@ def predict():
     if data.get("special_code") != 4141:
         append_data(input_formatted_data, "will_append_raw_formatted.csv")
 
+    input_formatted_data["Proto"] = int(proto_encoder.transform([input_formatted_data["Proto"]])[0])
+
     # Threat Detection
     detection_preds = detection_model_processor.predict(input_formatted_data)
-    print(f"detection preds: \n, {detection_preds}")
     detection_probs = detection_model_processor.predict_proba(input_formatted_data)
-    print(f"detection probs: \n, {detection_probs}")
     detection_confs = detection_probs.max(axis=1).tolist()
-    print(f"detection confs: \n, {detection_confs}")
 
     input_formatted_data["Label"]       = detection_preds
     input_formatted_data["Label_Score"] = detection_confs
@@ -96,9 +99,9 @@ def predict():
         append_data(to_save, "will_append_raw_formatted_result_perfect_scores.csv")
 
     # Threat Classification (only for Malicious records)
-    columns_to_drop = ["Proto_icmp","Proto_ipv6-icmp","Proto_lldp","Proto_llc","Proto_sctp","Proto", "Label", "Label_Score"] #!!!!!
+    columns_to_drop = ["Label", "Label_Score"]
     clean_data = input_formatted_data.drop(columns=[c for c in columns_to_drop if c in input_formatted_data.columns])
-    malicious_idxs = [i for i,p in enumerate(detection_preds) if p=="Malicious"]
+    malicious_idxs = [i for i,p in enumerate(detection_preds) if p==1] #1 is malicious (one-hat encoding)
     malicious_data = clean_data.iloc[malicious_idxs]
 
     if not malicious_data.empty:
@@ -109,30 +112,28 @@ def predict():
         classification_preds, classification_probs, classification_confs = [], [], []
 
     records, cls_idx = [], 0
-    for i in range(len(input_data)):
-        rec = {
-            "record_id": i,
-            "src_ip": input_data.iloc[i]["SrcIp"],
-            "dst_ip": input_data.iloc[i]["DstIp"],
-            "detection": str(detection_preds[i]),
-            "detection_confidence": float(detection_confs[i])
-        }
-        if i in malicious_idxs:
-            rec.update({
-                "classification": str(classification_preds[cls_idx]),
-                "classification_confidence": float(classification_confs[cls_idx]),
-                "classification_risk": str("not_calculated")
-            })
+    for i, row in input_data.iterrows():
+        detection_label = detection_label_encoder.inverse_transform([int(detection_preds[i])])[0]
+
+        is_malicious = i in malicious_idxs
+        classification_label = (classification_label_encoder.inverse_transform([int(classification_preds[cls_idx])])[0]
+                                if is_malicious else None)
+        classification_conf = float(classification_confs[cls_idx]) if is_malicious else None
+        classification_risk = "not_calculated" if is_malicious else None
+
+        if is_malicious:
             cls_idx += 1
-        """   
-        else:
-            rec.update({
-                "classification": None,
-                "classification_confidence": None,
-                "classification_risk": None
-            })
-        """ 
-        records.append(rec)
+
+        records.append({
+            "record_id": i,
+            "src_ip": row["SrcIp"],
+            "dst_ip": row["DstIp"],
+            "detection": detection_label,
+            "detection_confidence": float(detection_confs[i]),
+            "classification": classification_label,
+            "classification_confidence": classification_conf,
+            "classification_risk": classification_risk
+        })
 
     duration = time.time() - start_time
     return jsonify({"records": records, "duration": duration})
@@ -140,7 +141,7 @@ def predict():
 def append_data(data, file_name):
     try:
         date_str = datetime.now().strftime("%d%m")
-        output_dir = f"api/auto-update-res/{date_str}"
+        output_dir = f"src/api/auto-update-res/{date_str}"
         os.makedirs(output_dir, exist_ok=True)
         csv_path = os.path.join(output_dir, file_name)
 
