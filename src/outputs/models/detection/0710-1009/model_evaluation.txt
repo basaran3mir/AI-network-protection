@@ -1,0 +1,37 @@
+Model Evaluation Results
+============================
+Timestamp: 0710-1009
+Proto Encoding Map: 0:arp, 1:icmp, 2:ipv6-icmp, 3:llc, 4:lldp, 5:sctp, 6:tcp, 7:udp
+Label Encoding Map: 0:Benign, 1:Malicious
+
+Training Time: 5.6288 seconds
+
+Number of Test Samples: 279655
+Number of Each Type Test Samples: 
+0: 109880
+1: 169775
+
+Accuracy: 99.84%
+Precision: 99.84%
+Recall: 99.84%
+F1 Score: 99.84%
+
+Confusion Matrix (rows=true, cols=predicted):
+        0       1
+0  109530     350
+1     109  169666
+
+Per-class 2x2 matrices (TP/FP/FN/TN):
+Class=0: TP=109530, FP=109, FN=350, TN=169666
+Class=1: TP=169666, FP=350, FN=109, TN=109530
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00    109880
+           1       1.00      1.00      1.00    169775
+
+    accuracy                           1.00    279655
+   macro avg       1.00      1.00      1.00    279655
+weighted avg       1.00      1.00      1.00    279655
+

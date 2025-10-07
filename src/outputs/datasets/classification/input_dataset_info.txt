@@ -1,0 +1,66 @@
+General Dataset Information
+Total number of malicious records: 738153
+
+Attack Type Distribution
+UDPFlood: 457340 (61.96%)
+HTTPFlood: 140812 (19.08%)
+SlowrateDoS: 73124 (9.91%)
+TCPConnectScan: 20052 (2.72%)
+SYNScan: 20043 (2.72%)
+UDPScan: 15906 (2.15%)
+SYNFlood: 9721 (1.32%)
+ICMPFlood: 1155 (0.16%)
+
+Column Data Types
+Unnamed: 0: int64
+Seq: int64
+Dur: float64
+RunTime: float64
+Mean: float64
+Sum: float64
+Min: float64
+Max: float64
+Proto: object
+sTos: float64
+dTos: float64
+sDSb: object
+dDSb: object
+sTtl: float64
+dTtl: float64
+sHops: float64
+dHops: float64
+Cause: object
+TotPkts: int64
+SrcPkts: int64
+DstPkts: int64
+TotBytes: int64
+SrcBytes: int64
+DstBytes: int64
+Offset: int64
+sMeanPktSz: float64
+dMeanPktSz: float64
+Load: float64
+SrcLoad: float64
+DstLoad: float64
+Loss: int64
+SrcLoss: int64
+DstLoss: int64
+pLoss: float64
+SrcGap: float64
+DstGap: float64
+Rate: float64
+SrcRate: float64
+DstRate: float64
+State: object
+SrcWin: float64
+DstWin: float64
+sVid: float64
+dVid: float64
+SrcTCPBase: float64
+DstTCPBase: float64
+TcpRtt: float64
+SynAck: float64
+AckDat: float64
+Label: object
+Attack Type: object
+Attack Tool: object
