@@ -63,24 +63,22 @@ def predict():
     start_time = time.time()
     data = request.json
 
-    if not data or "data" not in data:
+    if not data or "data" not in data or "local_ip" not in data:
         return jsonify({"error": "Input data is missing."}), 400
 
     try:
         input_data = pd.DataFrame(data["data"])
-        print(input_data)
-        if data.get("special_code") != 4141:
-            append_data(input_data, "will_append_raw.csv")
+        local_ip = pd.DataFrame(data["local_ip"])
+        append_data(input_data, "will_append_raw.csv")
     except Exception as e:
         return jsonify({"error": f"Data transform error: {str(e)}"}), 400
 
     input_formatted_data = input_data.drop(columns=["SrcIp","DstIp"])
-    print(input_formatted_data)
+    append_data(input_formatted_data, "will_append_raw_formatted.csv")
 
-    if data.get("special_code") != 4141:
-        append_data(input_formatted_data, "will_append_raw_formatted.csv")
-
-    input_formatted_data["Proto"] = int(proto_encoder.transform([input_formatted_data["Proto"]])[0])
+    input_formatted_data["Proto"] = int(
+        proto_encoder.transform([input_formatted_data["Proto"].iloc[0].lower()])[0]
+    )
 
     # Threat Detection
     detection_preds = detection_model_processor.predict(input_formatted_data)
@@ -90,8 +88,7 @@ def predict():
     input_formatted_data["Label"]       = detection_preds
     input_formatted_data["Label_Score"] = detection_confs
 
-    if data.get("special_code") != 4141:
-        append_data(input_formatted_data, "will_append_raw_formatted_result.csv")
+    append_data(input_formatted_data, "will_append_raw_formatted_result.csv")
 
     perfect_df = input_formatted_data[input_formatted_data["Label_Score"] > 0.975]
     if not perfect_df.empty:
