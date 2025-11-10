@@ -1,10 +1,10 @@
 Model Evaluation Results
 ============================
-Timestamp: 1011-1024
+Timestamp: 1011-1533
 Proto Encoding Map: 0:arp, 1:icmp, 2:ipv6-icmp, 3:llc, 4:lldp, 5:sctp, 6:tcp, 7:udp
 Label Encoding Map: 0:HTTPFlood, 1:ICMPFlood, 2:SYNFlood, 3:SYNScan, 4:SlowrateDoS, 5:TCPConnectScan, 6:UDPFlood
 
-Training Time: 24.1650 seconds
+Training Time: 23.7301 seconds
 
 Number of Test Samples: 166117
 Number of Each Type Test Samples: 

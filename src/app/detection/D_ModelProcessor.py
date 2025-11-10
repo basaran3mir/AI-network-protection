@@ -85,7 +85,6 @@ class D_ModelProcessor:
         print(mcm_str)
 
         metrics = self.compute_metrics(y_test, y_pred, train_time)
-        self.print_metrics(metrics)
         self.save_results(model, metrics, cm_df, class_report, mcm_str)
 
         print("Model training is done.")
@@ -99,13 +98,6 @@ class D_ModelProcessor:
             'recall': recall_score(y_true, y_pred, average='weighted', zero_division=0),
             'f1_score': f1_score(y_true, y_pred, average='weighted', zero_division=0)
         }
-
-    def print_metrics(self, m):
-        print(f"Training Time: {m['train_time']:.4f} seconds")
-        print(f"Accuracy: {m['accuracy']*100:.2f}%")
-        print(f"Precision: {m['precision']*100:.2f}%")
-        print(f"Recall: {m['recall']*100:.2f}%")
-        print(f"F1 Score: {m['f1_score']*100:.2f}%")
 
     def save_results(self, model, m, cm_df, class_report, mcm_str):
         self.timestamp = datetime.now().strftime('%d%m-%H%M')
