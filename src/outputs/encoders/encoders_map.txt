@@ -1,3 +1,2 @@
-Proto Encoding Map: 0:arp, 1:icmp, 2:ipv6-icmp, 3:llc, 4:lldp, 5:sctp, 6:tcp, 7:udp
-Detection Model Label Encoding Map: 0:Benign, 1:Malicious
-Classification Model Label Encoding Map: 0:HTTPFlood, 1:ICMPFlood, 2:SYNFlood, 3:SYNScan, 4:SlowrateDoS, 5:TCPConnectScan, 6:UDPFlood
+Proto Encoding Map: 0:6, 1:7, 2:arp, 3:icmp, 4:ipv6-icmp, 5:llc, 6:lldp, 7:sctp, 8:tcp, 9:udp
+Detection Model Label Encoding Map: 0:0, 1:1, 2:Benign, 3:Malicious

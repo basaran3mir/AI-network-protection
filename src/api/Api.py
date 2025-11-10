@@ -16,14 +16,15 @@ logging.basicConfig(
 
 def retrain_models():
     try:
-        print("04:00:00 - Model re-train is starting.")
+        print("04:00:00")
         merge_with_previous_day()
 
         today = datetime.now()
-        base_dir    = Path("api/auto-update-res")
+        base_dir    = Path("src/api/auto-update-res")
         today_dir   = base_dir / today.strftime("%d%m")
         fn       = "merged_with_previous_day.csv"
 
+        print("Model re-train is starting.")
         processor = detection_model_processor
         processor.dataset_path = today_dir / fn
         processor.train_model()
@@ -34,7 +35,7 @@ def retrain_models():
         print(f"Error while models updating: {e}")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(retrain_models, 'cron', hour=4, minute=0, second=0)
+scheduler.add_job(retrain_models, 'cron', hour=10, minute=38, second=0)
 scheduler.start()
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -69,14 +70,12 @@ def predict():
     try:
         input_data = pd.DataFrame(data["data"])
         local_ip = data["local_ip"]
-        print("_____local ip: ",local_ip)
         append_data(input_data, "will_append_raw.csv")
     except Exception as e:
         return jsonify({"error": f"Data transform error: {str(e)}"}), 400
 
-    ###
-    # if src_ip and dst_ip starts with local_ip
-    local_prefix = prefix_for_ipv4(local_ip, octets=3)  # "10.0.1."
+    ### 1) Local ip control
+    local_prefix = prefix_for_ipv4(local_ip, octets=3) 
     all_local = input_data.apply(
         lambda row: str(row["SrcIp"]).startswith(local_prefix) and str(row["DstIp"]).startswith(local_prefix),
         axis=1
@@ -96,23 +95,24 @@ def predict():
             })
         duration = time.time() - start_time
         return jsonify({"records": records, "duration": duration})
-    ###
 
+    ### 2) drop SrcIp and DstIp columns
     input_formatted_data = input_data.drop(columns=["SrcIp","DstIp"])
-    append_data(input_formatted_data, "will_append_raw_formatted.csv")
+    append_data(input_formatted_data, "will_append_raw_formatted.csv") #for test
 
+    ### 3) One-hat-encoding for Proto column
     input_formatted_data["Proto"] = int(
         proto_encoder.transform([input_formatted_data["Proto"].iloc[0].lower()])[0]
     )
 
-    # Threat Detection
+    ### 4) Threat Detection
     detection_preds = detection_model_processor.predict(input_formatted_data)
     detection_probs = detection_model_processor.predict_proba(input_formatted_data)
     detection_confs = detection_probs.max(axis=1).tolist()
 
+    ### 5) Label and Label_Score columns added
     input_formatted_data["Label"]       = detection_preds
     input_formatted_data["Label_Score"] = detection_confs
-
     append_data(input_formatted_data, "will_append_raw_formatted_result.csv")
 
     perfect_df = input_formatted_data[input_formatted_data["Label_Score"] > 0.975]
@@ -120,10 +120,10 @@ def predict():
         to_save = perfect_df.drop(columns=["Label_Score"])
         append_data(to_save, "will_append_raw_formatted_result_perfect_scores.csv")
 
-    # Threat Classification (only for Malicious records)
+    ### 6) Threat Classification (only for Malicious records)
     columns_to_drop = ["Label", "Label_Score"]
     clean_data = input_formatted_data.drop(columns=[c for c in columns_to_drop if c in input_formatted_data.columns])
-    malicious_idxs = [i for i,p in enumerate(detection_preds) if p==1] #1 is malicious (one-hat encoding)
+    malicious_idxs = [i for i,p in enumerate(detection_preds) if p==1] # 1: malicious (one-hat encoding)
     malicious_data = clean_data.iloc[malicious_idxs]
 
     if not malicious_data.empty:
@@ -189,7 +189,7 @@ def merge_with_previous_day():
         today = datetime.now()
         yesterday = today - timedelta(days=1)
 
-        base_dir       = Path("api/auto-update-res")
+        base_dir       = Path("src/api/auto-update-res")
         today_dir      = base_dir / today.strftime("%d%m")
         yesterday_dir  = base_dir / yesterday.strftime("%d%m")
 
@@ -208,7 +208,7 @@ def merge_with_previous_day():
                     f"merge_with_previous_day: Yesterday's file is missing. "
                     "It will be merged with base dataset."
                 )
-                df_yest = pd.read_csv("api/auto-update-res/Combined_last.csv")
+                df_yest = pd.read_csv("src/outputs/datasets/detection/Combined_output.csv")
 
             df_today = pd.read_csv(today_fp)
 
