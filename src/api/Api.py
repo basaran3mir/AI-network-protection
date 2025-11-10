@@ -35,7 +35,7 @@ def retrain_models():
         print(f"Error while models updating: {e}")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(retrain_models, 'cron', hour=10, minute=38, second=0)
+scheduler.add_job(retrain_models, 'cron', hour=14, minute=54, second=0)
 scheduler.start()
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -97,32 +97,32 @@ def predict():
         return jsonify({"records": records, "duration": duration})
 
     ### 2) drop SrcIp and DstIp columns
-    input_formatted_data = input_data.drop(columns=["SrcIp","DstIp"])
-    append_data(input_formatted_data, "will_append_raw_formatted.csv") #for test
+    processed_data = input_data.drop(columns=["SrcIp","DstIp"])
 
     ### 3) One-hat-encoding for Proto column
-    input_formatted_data["Proto"] = int(
-        proto_encoder.transform([input_formatted_data["Proto"].iloc[0].lower()])[0]
+    processed_data["Proto"] = int(
+        proto_encoder.transform([processed_data["Proto"].iloc[0].lower()])[0]
     )
 
     ### 4) Threat Detection
-    detection_preds = detection_model_processor.predict(input_formatted_data)
-    detection_probs = detection_model_processor.predict_proba(input_formatted_data)
+    detection_preds = detection_model_processor.predict(processed_data)
+    detection_probs = detection_model_processor.predict_proba(processed_data)
     detection_confs = detection_probs.max(axis=1).tolist()
 
     ### 5) Label and Label_Score columns added
-    input_formatted_data["Label"]       = detection_preds
-    input_formatted_data["Label_Score"] = detection_confs
-    append_data(input_formatted_data, "will_append_raw_formatted_result.csv")
+    processed_data["Label"]       = detection_preds
+    processed_data["Label_Score"] = detection_confs
 
-    perfect_df = input_formatted_data[input_formatted_data["Label_Score"] > 0.975]
+    perfect_df = processed_data[processed_data["Label_Score"] > 0.975]
     if not perfect_df.empty:
         to_save = perfect_df.drop(columns=["Label_Score"])
-        append_data(to_save, "will_append_raw_formatted_result_perfect_scores.csv")
+        to_save["Proto"] = proto_encoder.inverse_transform(to_save["Proto"].astype(int))
+        to_save["Label"] = detection_label_encoder.inverse_transform(to_save["Label"].astype(int))
+        append_data(to_save, "will_append_processed.csv")
 
     ### 6) Threat Classification (only for Malicious records)
     columns_to_drop = ["Label", "Label_Score"]
-    clean_data = input_formatted_data.drop(columns=[c for c in columns_to_drop if c in input_formatted_data.columns])
+    clean_data = processed_data.drop(columns=[c for c in columns_to_drop if c in processed_data.columns])
     malicious_idxs = [i for i,p in enumerate(detection_preds) if p==1] # 1: malicious (one-hat encoding)
     malicious_data = clean_data.iloc[malicious_idxs]
 
@@ -193,7 +193,7 @@ def merge_with_previous_day():
         today_dir      = base_dir / today.strftime("%d%m")
         yesterday_dir  = base_dir / yesterday.strftime("%d%m")
 
-        fn          = "will_append_raw_formatted_result_perfect_scores.csv"
+        fn          = "will_append_processed.csv"
         today_fp    = today_dir / fn
         yest_fp     = yesterday_dir / fn
         out_fp      = today_dir / "merged_with_previous_day.csv"

@@ -45,9 +45,9 @@ sample_record2 = { #malicious
     "Proto":       "tcp",
 }
 
-
 payload = {
-    "data": [ sample_record2 ]
+    "data": [ sample_record2 ],
+    "local_ip": "10.0.1.31"
 }
 
 resp = requests.post(API_PREDICT_URL, json=payload)
