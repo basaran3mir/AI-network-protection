@@ -74,9 +74,11 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Data transform error: {str(e)}"}), 400
 
-    #if src_ip and dst_ip starts with local_ip
+    ###
+    # if src_ip and dst_ip starts with local_ip
+    local_prefix = prefix_for_ipv4(local_ip, octets=3)  # "10.0.1."
     all_local = input_data.apply(
-        lambda row: str(row["SrcIp"]).startswith(local_ip) and str(row["DstIp"]).startswith(local_ip),
+        lambda row: str(row["SrcIp"]).startswith(local_prefix) and str(row["DstIp"]).startswith(local_prefix),
         axis=1
     )
     if all(all_local):
@@ -86,7 +88,7 @@ def predict():
                 "record_id": i,
                 "src_ip": row["SrcIp"],
                 "dst_ip": row["DstIp"],
-                "detection": "Normal",
+                "detection": "Benign",
                 "detection_confidence": 1.0,
                 "classification": None,
                 "classification_confidence": None,
@@ -94,6 +96,7 @@ def predict():
             })
         duration = time.time() - start_time
         return jsonify({"records": records, "duration": duration})
+    ###
 
     input_formatted_data = input_data.drop(columns=["SrcIp","DstIp"])
     append_data(input_formatted_data, "will_append_raw_formatted.csv")
@@ -156,6 +159,12 @@ def predict():
 
     duration = time.time() - start_time
     return jsonify({"records": records, "duration": duration})
+
+def prefix_for_ipv4(ip, octets=3):
+    parts = str(ip).split('.')
+    if len(parts) != 4:
+        raise ValueError("Beklenen IPv4 adresi.")
+    return '.'.join(parts[:octets]) + '.'
 
 def append_data(data, file_name):
     try:
