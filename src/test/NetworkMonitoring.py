@@ -8,11 +8,9 @@ import asyncio
 import logging
 from pathlib import Path
 import aiofiles
-import time
 import csv
 from ai_rules_runner import apply_rules  # API test kodundaki gibi apply_rules fonksiyonu import ediliyor
 from save_rules import save_changes
-import socket
 
 # Dosya yolları
 home = Path.home()
@@ -193,16 +191,6 @@ async def follow_eve_json(file_path):
                         await asyncio.to_thread(process_api_result, api_result)
             except json.JSONDecodeError:
                 continue
-
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # Google DNS'e (8.8.8.8) sahte bağlantı kurarak local IP'yi bulur
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    finally:
-        s.close()
-    return ip
 
 # Ana fonksiyon
 if __name__ == "__main__":

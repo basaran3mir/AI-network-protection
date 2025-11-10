@@ -16,7 +16,7 @@ logging.basicConfig(
 
 def retrain_models():
     try:
-        print("04:00:00 - Modeller yeniden eğitiliyor…")
+        print("04:00:00 - Model re-train is starting.")
         merge_with_previous_day()
 
         today = datetime.now()
@@ -28,10 +28,10 @@ def retrain_models():
         processor.dataset_path = today_dir / fn
         processor.train_model()
         processor.model = processor.load_model()
-        print("Modeller güncellendi ve yüklendi.")
+        print("Models is updated and loaded.")
 
     except Exception as e:
-        print(f"Modeller güncellenirken hata: {e}")
+        print(f"Error while models updating: {e}")
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(retrain_models, 'cron', hour=4, minute=0, second=0)
