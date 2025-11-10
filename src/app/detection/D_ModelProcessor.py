@@ -26,10 +26,7 @@ class D_ModelProcessor:
 
         self.timestamp = datetime.now().strftime('%d%m-%H%M')
         self.ts_dir = os.path.join(self.base_dir, self.timestamp)
-        os.makedirs(self.ts_dir, exist_ok=True)
-        
         self.latest_dir = os.path.join(self.base_dir, 'latest')
-        os.makedirs(self.latest_dir, exist_ok=True)
 
         self.proto_encoder = LabelEncoder()
         self.label_encoder = LabelEncoder()
@@ -42,7 +39,7 @@ class D_ModelProcessor:
         self.model = self.load_model()
 
     def train_model(self):
-        print("Model training is starting.")
+        print("Detection model training is starting.")
         df = pd.read_csv(self.dataset_path, encoding='utf-8')
 
         # --- Proto ENCODING ---
@@ -67,27 +64,22 @@ class D_ModelProcessor:
         labels = sorted(np.unique(y_test))
         cm = confusion_matrix(y_test, y_pred, labels=labels)
         cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-        print("Confusion Matrix (rows=true, cols=predicted):")
-        print(cm_df)
 
         class_report = classification_report(
             y_test, y_pred, labels=labels, zero_division=0
         )
-        print("\nClassification Report:")
-        print(class_report)
 
         mcm = multilabel_confusion_matrix(y_test, y_pred, labels=labels)
         mcm_str = ""
         for idx, cls in enumerate(labels):
             tn, fp, fn, tp = mcm[idx].ravel()
             mcm_str += (f"Class={cls}: TP={tp}, FP={fp}, FN={fn}, TN={tn}\n")
-        print("\nPer-class 2x2 matrices:")
-        print(mcm_str)
 
         metrics = self.compute_metrics(y_test, y_pred, train_time)
+
         self.save_results(model, metrics, cm_df, class_report, mcm_str)
 
-        print("Model training is done.")
+        print("Detection model training is done.")
         return model
 
     def compute_metrics(self, y_true, y_pred, train_time):
@@ -100,9 +92,11 @@ class D_ModelProcessor:
         }
 
     def save_results(self, model, m, cm_df, class_report, mcm_str):
+
         self.timestamp = datetime.now().strftime('%d%m-%H%M')
         self.ts_dir = os.path.join(self.base_dir, self.timestamp)
         os.makedirs(self.ts_dir, exist_ok=True)
+        os.makedirs(self.latest_dir, exist_ok=True)
 
         test_count = int(cm_df.values.sum())
         per_class_counts = {label: int(cm_df.loc[label].sum()) for label in cm_df.index}
@@ -157,10 +151,10 @@ class D_ModelProcessor:
 
     def load_model(self):
         if os.path.exists(self.model_file):
-            print(f"Model loaded: {self.model_file}")
+            print(f"Detection model loaded: {self.model_file}")
             return joblib.load(self.model_file)
         else:
-            print("Model not found, training...")
+            print("Detection model not found.")
             return self.train_model()
 
     def predict(self, X):
@@ -168,7 +162,3 @@ class D_ModelProcessor:
 
     def predict_proba(self, X):
         return self.model.predict_proba(X)
-"""
-x = D_ModelProcessor()
-x.train_model()
-"""

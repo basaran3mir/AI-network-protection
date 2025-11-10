@@ -35,7 +35,7 @@ def retrain_models():
         print(f"Error while models updating: {e}")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(retrain_models, 'cron', hour=4, minute=0, second=0)
+scheduler.add_job(retrain_models, 'cron', hour=4, minute=0, second=10)
 scheduler.start()
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
