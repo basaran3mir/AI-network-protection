@@ -75,6 +75,33 @@ final_columns = [
     "Proto"
 ]
 
+MAX_SIZE_MB = 50
+ROTATE_COUNT = 5
+
+def rotate_logs():
+    for i in range(ROTATE_COUNT - 1, 0, -1):
+        older = f"{eve_log_path}.{i}"
+        newer = f"{eve_log_path}.{i+1}"
+
+        if os.path.exists(older):
+            os.rename(older, newer)
+
+    if os.path.exists(eve_log_path):
+        os.rename(eve_log_path, f"{eve_log_path}.1")
+
+    open(eve_log_path, "w").close()
+    logging.info("[LOG ROTATE] eve.json dosyası döndürüldü.")
+
+def monitor_log_file():
+    logging.info("[LOG ROTATE] Eve.json dosyası izleniyor...")
+    while True:
+        if os.path.exists(eve_log_path):
+            size_mb = os.path.getsize(eve_log_path) / (1024 * 1024)
+            if size_mb >= MAX_SIZE_MB:
+                logging.info(f"[LOG ROTATE] Boyut limiti aşıldı: {size_mb:.2f} MB")
+                rotate_logs()
+        time.sleep(5)
+
 def get_local_ipv4_prefix(octets=3):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -148,7 +175,6 @@ def process_api_result(result):
                 writer.writerow([src, dst, attack])
             
             # Dış IP ve saldırı tipine göre kuralların uygulanması
-            print(external_ip)
             apply_rules(external_ip, attack)
             logging.info(f"apply_rules çağrıldı: dış IP -> {external_ip}, saldırı -> {attack}")
             save_changes()
@@ -183,9 +209,7 @@ async def follow_eve_json(file_path):
                     # DataFrame oluşturma ve gerekli dönüştürmeleri yapma
                     df_row = pd.DataFrame([filtered_log])
                     df_row['SrcIp'] = df_row['src_ip']
-                    print(df_row['SrcIp'])
                     df_row['DstIp'] = df_row['dest_ip']
-                    print(df_row['DstIp'])
                     df_row['TotBytes'] = df_row['flow.bytes_toserver'] + df_row['flow.bytes_toclient']
                     df_row['SrcBytes'] = df_row['flow.bytes_toserver']
                     df_row['DstBytes'] = df_row['flow.bytes_toclient']
@@ -228,4 +252,10 @@ async def follow_eve_json(file_path):
 # Ana fonksiyon
 if __name__ == "__main__":
     logging.info("Gerçek zamanlı Suricata log takibi başlatılıyor...")
+
+    # EKLENEN: Log rotating için arka planda thread başlat
+    rotate_thread = threading.Thread(target=monitor_log_file, daemon=True)
+    rotate_thread.start()
+
+    # Asenkron takip başlasın
     asyncio.run(follow_eve_json(eve_log_path))
