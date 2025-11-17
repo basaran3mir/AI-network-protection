@@ -89,7 +89,7 @@ def get_local_ipv4_prefix(octets=3):
 
     return '.'.join(parts[:octets]) + '.'
 
-local_prefix = get_local_ipv4_prefix()
+local_prefix = ""
 
 # Fonksiyon: Süre hesaplama
 def calculate_duration(start_str, end_str):
@@ -206,6 +206,7 @@ async def follow_eve_json(file_path):
                     df_final = df_row[final_columns].fillna(0)
                     
                     # Hazırlanan veriyi API için sözlük haline getir
+                    local_prefix = get_local_ipv4_prefix()
                     sample_data = {
                         "local_prefix": local_prefix,
                         "data": df_final.to_dict(orient="records")

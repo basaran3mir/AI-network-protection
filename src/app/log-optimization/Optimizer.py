@@ -12,7 +12,7 @@ def rotate_logs():
     for i in range(ROTATE_COUNT - 1, 0, -1):
         older = f"{LOG_FILE}.{i}"
         newer = f"{LOG_FILE}.{i+1}"
-
+ 
         if os.path.exists(older):
             shutil.move(older, newer)
 
