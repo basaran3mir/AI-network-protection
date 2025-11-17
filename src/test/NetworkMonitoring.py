@@ -183,7 +183,9 @@ async def follow_eve_json(file_path):
                     # DataFrame oluşturma ve gerekli dönüştürmeleri yapma
                     df_row = pd.DataFrame([filtered_log])
                     df_row['SrcIp'] = df_row['src_ip']
+                    print(df_row['SrcIp'])
                     df_row['DstIp'] = df_row['dest_ip']
+                    print(df_row['DstIp'])
                     df_row['TotBytes'] = df_row['flow.bytes_toserver'] + df_row['flow.bytes_toclient']
                     df_row['SrcBytes'] = df_row['flow.bytes_toserver']
                     df_row['DstBytes'] = df_row['flow.bytes_toclient']
