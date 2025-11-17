@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 import aiofiles
 import csv
-from ai_rules_runner import apply_rules  # API test kodundaki gibi apply_rules fonksiyonu import ediliyor
+from ai_rules_runner import apply_rules
 from save_rules import save_changes
 
 import subprocess
@@ -136,20 +136,19 @@ def process_api_result(result):
         # "Benign" olmayan kayıtlar için işlem yapılır
         if attack != "Benign":
             external_ip = ""
-            # Kendi IP'nizin "10.0.0." aralığında olduğunu varsayarak 'dış' IP belirleniyor
-            if src.startswith("10.0.0."):
+            # Kendi IP'nizin "10.0.0. - 10.0.1" aralığında olduğunu varsayarak 'dış' IP belirleniyor
+            if src.startswith(local_prefix):
                 external_ip = dst
-            elif dst.startswith("10.0.0."):
+            elif dst.startswith(local_prefix):
                 external_ip = src
 
-            print(external_ip)
-            
             # CSV'ye yazma
             with open(output_path, "a", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow([src, dst, attack])
             
             # Dış IP ve saldırı tipine göre kuralların uygulanması
+            print(external_ip)
             apply_rules(external_ip, attack)
             logging.info(f"apply_rules çağrıldı: dış IP -> {external_ip}, saldırı -> {attack}")
             save_changes()
