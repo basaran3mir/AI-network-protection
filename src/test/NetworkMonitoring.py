@@ -13,6 +13,21 @@ import csv
 from ai_rules_runner import apply_rules  # API test kodundaki gibi apply_rules fonksiyonu import ediliyor
 from save_rules import save_changes
 
+import subprocess
+import threading
+import time
+
+def keep_sudo_alive(interval=30):
+    def refresh_sudo():
+        while True:
+            subprocess.run(['sudo', '-v'])
+            time.sleep(interval)
+    thread = threading.Thread(target=refresh_sudo, daemon=True)
+    thread.start()
+
+# Ana kodun başında çağır
+keep_sudo_alive()
+
 # Dosya yolları
 home = Path.home()
 eve_log_path = "/var/log/suricata/eve.json"
@@ -193,7 +208,7 @@ async def follow_eve_json(file_path):
                     
                     # Hazırlanan veriyi API için sözlük haline getir
                     sample_data = {
-                        "local_ip": local_prefix,
+                        "local_prefix": local_prefix,
                         "data": df_final.to_dict(orient="records")
                     }
                     
