@@ -25,28 +25,21 @@ def keep_sudo_alive(interval=30):
     thread = threading.Thread(target=refresh_sudo, daemon=True)
     thread.start()
 
-# Ana kodun başında çağır
 keep_sudo_alive()
 
-# Dosya yolları
 eve_log_path = "/var/log/suricata/eve.json"
+API_PREDICT_URL = "http://10.0.0.191:5000/predict"
 
-# API URL'leri
-API_PREDICT_URL = "http://10.0.0.239:5000/predict"
-
-# CSV için çıktı dosyası ayarları (API test kodundaki gibi)
 output_dir  = "api"
 output_file = "predictions.csv"
 output_path = os.path.join(output_dir, output_file)
 
-# CSV dosyasını oluştur (başlıkları yaz) eğer yoksa
 os.makedirs(output_dir, exist_ok=True)
 if not os.path.exists(output_path):
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["SrcIp", "DstIp", "Attack Type"])
 
-# Loglama yapılandırması
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=getattr(logging, log_level),
@@ -57,7 +50,6 @@ logging.basicConfig(
     ]
 )
 
-# İşlenecek alanlar, protokol tipleri ve son çıktı sütunları
 parameters = [
     "timestamp", "event_type", "src_ip", "dest_ip", "src_port", "dest_port", "proto", "app_proto",
     "flow.start", "flow.end", "flow.bytes_toserver", "flow.bytes_toclient", "flow.bytes",
@@ -84,13 +76,12 @@ def get_local_ipv4_prefix(octets=3):
 
     parts = ip.split('.')
     if len(parts) != 4:
-        raise ValueError("Beklenen IPv4 adresi.")
+        raise ValueError("Expected IPv4 address.")
 
     return '.'.join(parts[:octets]) + '.'
 
 local_prefix = ""
 
-# Fonksiyon: Süre hesaplama
 def calculate_duration(start_str, end_str):
     try:
         start = parser.parse(start_str)
@@ -100,7 +91,6 @@ def calculate_duration(start_str, end_str):
     except Exception:
         return np.nan
 
-# API'ye veri gönderme (asenkron)
 async def send_post_request(url, data):
     try:
         async with aiohttp.ClientSession() as session:
@@ -118,7 +108,6 @@ async def send_post_request(url, data):
         logging.error(f"İstek sırasında hata oluştu: {str(e)}")
         return None
 
-# API sonuçlarını işleyip CSV’ye yazan ve apply_rules'u çağıran fonksiyon (senkron)
 def process_api_result(result):
     """
     API'den gelen sonuçları işliyor: 
@@ -127,54 +116,37 @@ def process_api_result(result):
       - apply_rules fonksiyonu çağrılıyor.
     """
     for rec in result.get("records", []):
-        # API'den gelen key adlarının küçük harf olduğunu varsayıyoruz (gerekirse uyarlayın)
         src    = rec.get("src_ip", "")
         dst    = rec.get("dst_ip", "")
         attack = rec.get("classification") or rec.get("detection", "")
         
-        # "Benign" olmayan kayıtlar için işlem yapılır
         if attack != "Benign":
             external_ip = ""
-            # Kendi IP'nizin "10.0.0. - 10.0.1" aralığında olduğunu varsayarak 'dış' IP belirleniyor
             if src.startswith(local_prefix):
                 external_ip = dst
             elif dst.startswith(local_prefix):
                 external_ip = src
 
-            # CSV'ye yazma
             with open(output_path, "a", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow([src, dst, attack])
             
-            # Dış IP ve saldırı tipine göre kuralların uygulanması
             apply_rules(external_ip, attack)
             logging.info(f"apply_rules çağrıldı: dış IP -> {external_ip}, saldırı -> {attack}")
             save_changes()
 
-MAX_LINES = 100
-
-# Gerçek zamanlı eve.json takibi (asenkron)
 async def follow_eve_json_optimized(file_path):
     line_count = 0
     async with aiofiles.open(file_path, 'r') as f:
-        # Dosyanın en sonuna git
         await f.seek(0, os.SEEK_END)
         while True:
             line = await f.readline()
             if not line:
                 await asyncio.sleep(0.2)
                 continue
-            line_count += 1
-            if line_count >= MAX_LINES:
-                await f.seek(0)
-                await f.truncate()
-                line_count = 0
-                logging.info(f"{file_path} satır limiti aşıldı, içerik sıfırlandı.")
-                await f.seek(0, os.SEEK_END)
             try:
                 log_record = json.loads(line)
                 filtered_log = {}
-                # Parametre listesindeki her alanı kontrol et
                 for param in parameters:
                     if param.startswith("flow.") and "flow" in log_record:
                         flow_key = param.split(".", 1)[1]
@@ -188,7 +160,6 @@ async def follow_eve_json_optimized(file_path):
                         filtered_log[param] = log_record[param]
                 
                 if filtered_log.get("event_type") == "flow":
-                    # DataFrame oluşturma ve gerekli dönüştürmeleri yapma
                     df_row = pd.DataFrame([filtered_log])
                     df_row['SrcIp'] = df_row['src_ip']
                     df_row['DstIp'] = df_row['dest_ip']
@@ -213,25 +184,20 @@ async def follow_eve_json_optimized(file_path):
                             df_row[col] = False
                     df_final = df_row[final_columns].fillna(0)
                     
-                    # Hazırlanan veriyi API için sözlük haline getir
                     local_prefix = get_local_ipv4_prefix()
                     sample_data = {
                         "local_prefix": local_prefix,
                         "data": df_final.to_dict(orient="records")
                     }
                     
-
-                    # API'ye asenkron POST isteği yapılıyor
                     api_result = await send_post_request(API_PREDICT_URL, sample_data)
                     
-                    # API yanıtı varsa sonuçları işleyip CSV'ye yaz ve apply_rules'u çağır
                     if api_result is not None and "records" in api_result:
-                        # Bloklayıcı işlemlerden kaçınmak için to_thread kullanarak senkron fonksiyonu çağırıyoruz
                         await asyncio.to_thread(process_api_result, api_result)
             except json.JSONDecodeError:
                 continue
 
 # Ana fonksiyon
 if __name__ == "__main__":
-    logging.info("Gerçek zamanlı Suricata log takibi başlatılıyor...")
+    logging.info("Ral-time Suricata log monitoring is starting...")
     asyncio.run(follow_eve_json_optimized(eve_log_path))
