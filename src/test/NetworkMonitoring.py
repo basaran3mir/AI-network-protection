@@ -29,7 +29,6 @@ def keep_sudo_alive(interval=30):
 keep_sudo_alive()
 
 # Dosya yolları
-home = Path.home()
 eve_log_path = "/var/log/suricata/eve.json"
 
 # API URL'leri
@@ -74,33 +73,6 @@ final_columns = [
     "Dur", "RunTime", "TcpRtt", "SynAck", "AckDat", "Seq",
     "Proto"
 ]
-
-MAX_SIZE_MB = 50
-ROTATE_COUNT = 5
-
-def rotate_logs():
-    for i in range(ROTATE_COUNT - 1, 0, -1):
-        older = f"{eve_log_path}.{i}"
-        newer = f"{eve_log_path}.{i+1}"
-
-        if os.path.exists(older):
-            os.rename(older, newer)
-
-    if os.path.exists(eve_log_path):
-        os.rename(eve_log_path, f"{eve_log_path}.1")
-
-    open(eve_log_path, "w").close()
-    logging.info("[LOG ROTATE] eve.json dosyası döndürüldü.")
-
-def monitor_log_file():
-    logging.info("[LOG ROTATE] Eve.json dosyası izleniyor...")
-    while True:
-        if os.path.exists(eve_log_path):
-            size_mb = os.path.getsize(eve_log_path) / (1024 * 1024)
-            if size_mb >= MAX_SIZE_MB:
-                logging.info(f"[LOG ROTATE] Boyut limiti aşıldı: {size_mb:.2f} MB")
-                rotate_logs()
-        time.sleep(5)
 
 def get_local_ipv4_prefix(octets=3):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -179,8 +151,11 @@ def process_api_result(result):
             logging.info(f"apply_rules çağrıldı: dış IP -> {external_ip}, saldırı -> {attack}")
             save_changes()
 
+MAX_LINES = 100
+
 # Gerçek zamanlı eve.json takibi (asenkron)
-async def follow_eve_json(file_path):
+async def follow_eve_json_optimized(file_path):
+    line_count = 0
     async with aiofiles.open(file_path, 'r') as f:
         # Dosyanın en sonuna git
         await f.seek(0, os.SEEK_END)
@@ -189,6 +164,13 @@ async def follow_eve_json(file_path):
             if not line:
                 await asyncio.sleep(0.2)
                 continue
+            line_count += 1
+            if line_count >= MAX_LINES:
+                await f.seek(0)
+                await f.truncate()
+                line_count = 0
+                logging.info(f"{file_path} satır limiti aşıldı, içerik sıfırlandı.")
+                await f.seek(0, os.SEEK_END)
             try:
                 log_record = json.loads(line)
                 filtered_log = {}
@@ -252,10 +234,4 @@ async def follow_eve_json(file_path):
 # Ana fonksiyon
 if __name__ == "__main__":
     logging.info("Gerçek zamanlı Suricata log takibi başlatılıyor...")
-
-    # EKLENEN: Log rotating için arka planda thread başlat
-    rotate_thread = threading.Thread(target=monitor_log_file, daemon=True)
-    rotate_thread.start()
-
-    # Asenkron takip başlasın
-    asyncio.run(follow_eve_json(eve_log_path))
+    asyncio.run(follow_eve_json_optimized(eve_log_path))
