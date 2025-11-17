@@ -64,18 +64,17 @@ def predict():
     start_time = time.time()
     data = request.json
 
-    if not data or "data" not in data or "local_ip" not in data:
+    if not data or "data" not in data or "local_prefix" not in data:
         return jsonify({"error": "Input data is missing."}), 400
 
     try:
         input_data = pd.DataFrame(data["data"])
-        local_ip = data["local_ip"]
+        local_prefix = data["local_prefix"]
         append_data(input_data, "will_append_raw.csv")
     except Exception as e:
         return jsonify({"error": f"Data transform error: {str(e)}"}), 400
 
     ### 1) Local ip control
-    local_prefix = prefix_for_ipv4(local_ip, octets=3) 
     all_local = input_data.apply(
         lambda row: str(row["SrcIp"]).startswith(local_prefix) and str(row["DstIp"]).startswith(local_prefix),
         axis=1
@@ -159,12 +158,6 @@ def predict():
 
     duration = time.time() - start_time
     return jsonify({"records": records, "duration": duration})
-
-def prefix_for_ipv4(ip, octets=3):
-    parts = str(ip).split('.')
-    if len(parts) != 4:
-        raise ValueError("Beklenen IPv4 adresi.")
-    return '.'.join(parts[:octets]) + '.'
 
 def append_data(data, file_name):
     try:

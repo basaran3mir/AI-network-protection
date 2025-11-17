@@ -4,7 +4,7 @@ import time
 
 # Ayarlar
 LOG_FILE = "src/res/logs/eve.json"
-MAX_SIZE_MB = 50
+MAX_SIZE_MB = 1
 ROTATE_COUNT = 5
 
 def rotate_logs():

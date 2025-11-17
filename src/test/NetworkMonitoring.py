@@ -60,17 +60,21 @@ final_columns = [
     "Proto"
 ]
 
-def get_local_ip():
+def get_local_ipv4_prefix(octets=3):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # Google DNS'e (8.8.8.8) sahte bağlantı kurarak local IP'yi bulur
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
     finally:
         s.close()
-    return ip
 
-local_ip = get_local_ip()
+    parts = ip.split('.')
+    if len(parts) != 4:
+        raise ValueError("Beklenen IPv4 adresi.")
+
+    return '.'.join(parts[:octets]) + '.'
+
+local_prefix = get_local_ipv4_prefix()
 
 # Fonksiyon: Süre hesaplama
 def calculate_duration(start_str, end_str):
@@ -189,7 +193,7 @@ async def follow_eve_json(file_path):
                     
                     # Hazırlanan veriyi API için sözlük haline getir
                     sample_data = {
-                        "local_ip": local_ip,
+                        "local_ip": local_prefix,
                         "data": df_final.to_dict(orient="records")
                     }
                     
