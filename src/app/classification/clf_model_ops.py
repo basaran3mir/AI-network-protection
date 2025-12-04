@@ -17,18 +17,18 @@ from sklearn.metrics import (
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 
-class C_ModelProcessor:
+class ClfModelOperations:
     def __init__(self):
-        self.dataset_path = os.path.join('src', 'outputs', 'datasets', 'classification', 'Combined_output.csv')
+        self.dataset_path = os.path.join('src', 'outputs', 'datasets', 'classification', 'combined_output.csv')
         self.base_dir = os.path.join('src', 'outputs', 'models', 'classification')
 
         self.timestamp = datetime.now().strftime('%d%m-%H%M')
         self.ts_dir = os.path.join(self.base_dir, self.timestamp)
         self.latest_dir = os.path.join(self.base_dir, 'latest')
 
-        self.proto_encoder = joblib.load("src\outputs\encoders\dc_proto_encoder.pkl")
+        self.proto_encoder = joblib.load("src\outputs\encoders\shared_proto_encoder.pkl")
         self.label_encoder = LabelEncoder()
-        self.label_encoder_path = os.path.join('src', 'outputs', 'encoders', 'c_label_encoder.pkl')
+        self.label_encoder_path = os.path.join('src', 'outputs', 'encoders', 'clf_label_encoder.pkl')
         self.encoders_map_path = os.path.join('src', 'outputs', 'encoders', 'encoders_map.txt')
 
         self.model_file = os.path.join(self.latest_dir, 'model.pkl')

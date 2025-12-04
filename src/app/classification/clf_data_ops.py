@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-class C_DataProcessor:
+class ClfDataOperations:
 
     def __init__(self):
-        self.input_dataset_file_path = 'src/res/datasets/Combined.csv'
+        self.input_dataset_file_path = 'src/res/datasets/combined.csv'
         self.input_dataset_info_file_path = 'src/outputs/datasets/classification/input_dataset_info.txt'
-        self.output_dataset_file_path = 'src/outputs/datasets/classification/Combined_output.csv'
+        self.output_dataset_file_path = 'src/outputs/datasets/classification/combined_output.csv'
         self.output_dataset_info_file_path = 'src/outputs/datasets/classification/output_dataset_info.txt'
 
         for path in [
@@ -76,10 +76,7 @@ class C_DataProcessor:
         return self.df
 
     def allSteps(self):
-        dpFC = C_DataProcessor()
+        dpFC = ClfDataOperations()
         dpFC.dataAnalysis(self.input_dataset_info_file_path)
         dpFC.filterData()
         dpFC.dataAnalysis(self.output_dataset_info_file_path)
-
-x = C_DataProcessor()
-x.allSteps()

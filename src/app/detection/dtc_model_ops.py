@@ -18,10 +18,10 @@ from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 import time
 
-class D_ModelProcessor:
+class DtcModelOperations:
 
     def __init__(self):
-        self.dataset_path = os.path.join('src', 'outputs', 'datasets', 'detection', 'Combined_output.csv')
+        self.dataset_path = os.path.join('src', 'outputs', 'datasets', 'detection', 'combined_output.csv')
         self.base_dir = os.path.join('src', 'outputs', 'models', 'detection')
 
         self.timestamp = datetime.now().strftime('%d%m-%H%M')
@@ -30,8 +30,8 @@ class D_ModelProcessor:
 
         self.proto_encoder = LabelEncoder()
         self.label_encoder = LabelEncoder()
-        self.proto_encoder_path = os.path.join('src', 'outputs', 'encoders', 'dc_proto_encoder.pkl')
-        self.label_encoder_path = os.path.join('src', 'outputs', 'encoders', 'd_label_encoder.pkl')
+        self.proto_encoder_path = os.path.join('src', 'outputs', 'encoders', 'shared_proto_encoder.pkl')
+        self.label_encoder_path = os.path.join('src', 'outputs', 'encoders', 'dtc_label_encoder.pkl')
         self.encoders_map_path = os.path.join('src', 'outputs', 'encoders', 'encoders_map.txt')
 
         self.model_file = os.path.join(self.latest_dir, 'model.pkl')

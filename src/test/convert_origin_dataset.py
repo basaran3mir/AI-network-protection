@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from dateutil import parser
 
-raw_csv = 'res/test/real_dataset.csv'
-output_csv = 'res/test/real_dataset_formatted.csv'
+raw_csv = 'res/test/origin_dataset.csv'
+output_csv = 'res/test/origin_dataset_formatted.csv'
 
 df_raw = pd.read_csv(raw_csv)
 
@@ -84,4 +84,4 @@ for col in final_columns:
 df_final = df_flow[final_columns]
 
 df_final.to_csv(output_csv, index=False)
-print(f"Raw veriler, eğitim veri seti formatına dönüştürüldü ve '{output_csv}' dosyasına kaydedildi.")
+print(f"All raw data transformed into training data set and saved to '{output_csv}'.")

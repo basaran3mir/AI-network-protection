@@ -1,7 +1,6 @@
-import joblib
 import requests
 
-API_PREDICT_URL = "http://10.0.0.239:5000/predict"
+API_PREDICT_URL = "http://10.0.0.191:5000/predict"
 
 sample_record1 = { #benign
     "SrcIp":      "0.0.0.0",
@@ -47,7 +46,7 @@ sample_record2 = { #malicious
 
 payload = {
     "data": [ sample_record2 ],
-    "local_ip": "10.0.1.31"
+    "local_prefix": "10.0"
 }
 
 resp = requests.post(API_PREDICT_URL, json=payload)

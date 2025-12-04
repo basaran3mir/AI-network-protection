@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-class D_DataProcessor:
+class DtcDataOperations:
 
     def __init__(self):
-        self.input_dataset_file_path = 'src/res/datasets/Combined.csv'
+        self.input_dataset_file_path = 'src/res/datasets/combined.csv'
         self.input_dataset_info_file_path = 'src/outputs/datasets/detection/input_dataset_info.txt'
-        self.output_dataset_file_path = 'src/outputs/datasets/detection/Combined_output.csv'
+        self.output_dataset_file_path = 'src/outputs/datasets/detection/combined_output.csv'
         self.output_dataset_info_file_path = 'src/outputs/datasets/detection/output_dataset_info.txt'
 
         for path in [
@@ -71,11 +71,7 @@ class D_DataProcessor:
         return self.df
 
     def allSteps(self):
-        dpFD = D_DataProcessor()
+        dpFD = DtcDataOperations()
         dpFD.dataAnalysis(self.input_dataset_info_file_path)
         dpFD.filterData()
         dpFD.dataAnalysis(self.output_dataset_info_file_path)
-"""
-x = D_DataProcessor()
-x.allSteps()
-"""

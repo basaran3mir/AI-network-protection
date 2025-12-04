@@ -45,7 +45,7 @@ logging.basicConfig(
     level=getattr(logging, log_level),
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("suricata_log_analiz.log"),
+        logging.FileHandler("suricata_log_analysis.log"),
         logging.StreamHandler()
     ]
 )
@@ -197,7 +197,6 @@ async def follow_eve_json_optimized(file_path):
             except json.JSONDecodeError:
                 continue
 
-# Ana fonksiyon
 if __name__ == "__main__":
     logging.info("Ral-time Suricata log monitoring is starting...")
     asyncio.run(follow_eve_json_optimized(eve_log_path))

@@ -25,7 +25,7 @@ def retrain_models():
         fn       = "merged_with_previous_day.csv"
 
         print("Model re-train is starting.")
-        processor = detection_model_processor
+        processor = dtc_model_ops
         processor.dataset_path = today_dir / fn
         processor.train_model()
         processor.model = processor.load_model()
@@ -46,14 +46,14 @@ if parent_dir not in sys.path:
 app = Flask(__name__)
 CORS(app)
 
-from app.detection.D_ModelProcessor import D_ModelProcessor as DetectionModel
-from app.classification.C_ModelProcessor import C_ModelProcessor as ClassificationModel
+from app.detection.dtc_model_ops import DtcModelOperations
+from app.classification.clf_model_ops import ClfModelOperations
 
-detection_model_processor = DetectionModel()
-classification_model_processor = ClassificationModel()
-proto_encoder = joblib.load("src/outputs/encoders/dc_proto_encoder.pkl")
-detection_label_encoder = joblib.load("src/outputs/encoders/d_label_encoder.pkl")
-classification_label_encoder = joblib.load("src/outputs/encoders/c_label_encoder.pkl")
+dtc_model_ops = DtcModelOperations()
+clf_model_ops = ClfModelOperations()
+proto_encoder = joblib.load("src/outputs/encoders/shared_proto_encoder.pkl")
+detection_label_encoder = joblib.load("src/outputs/encoders/dtc_label_encoder.pkl")
+classification_label_encoder = joblib.load("src/outputs/encoders/clf_label_encoder.pkl")
 
 @app.route('/')
 def home():
@@ -104,8 +104,8 @@ def predict():
     )
 
     ### 4) Threat Detection
-    detection_preds = detection_model_processor.predict(processed_data)
-    detection_probs = detection_model_processor.predict_proba(processed_data)
+    detection_preds = dtc_model_ops.predict(processed_data)
+    detection_probs = dtc_model_ops.predict_proba(processed_data)
     detection_confs = detection_probs.max(axis=1).tolist()
 
     ### 5) Label and Label_Score columns added
@@ -126,8 +126,8 @@ def predict():
     malicious_data = clean_data.iloc[malicious_idxs]
 
     if not malicious_data.empty:
-        classification_preds = classification_model_processor.predict(malicious_data)
-        classification_probs = classification_model_processor.predict_proba(malicious_data)
+        classification_preds = clf_model_ops.predict(malicious_data)
+        classification_probs = clf_model_ops.predict_proba(malicious_data)
         classification_confs = classification_probs.max(axis=1).tolist()
     else:
         classification_preds, classification_probs, classification_confs = [], [], []
@@ -201,7 +201,7 @@ def merge_with_previous_day():
                     f"merge_with_previous_day: Yesterday's file is missing. "
                     "It will be merged with base dataset."
                 )
-                df_yest = pd.read_csv("src/outputs/datasets/detection/Combined_output.csv")
+                df_yest = pd.read_csv("src/outputs/datasets/detection/combined_output.csv")
 
             df_today = pd.read_csv(today_fp)
 
