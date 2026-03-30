@@ -4,7 +4,7 @@ import pandas as pd
 class ClfDataOperations:
 
     def __init__(self):
-        self.input_dataset_file_path = 'src/res/datasets/combined.csv'
+        self.input_dataset_file_path = 'src/res/datasets/combined.csv' #raw dataset path
         self.input_dataset_info_file_path = 'src/outputs/datasets/classification/input_dataset_info.txt'
         self.output_dataset_file_path = 'src/outputs/datasets/classification/combined_output.csv'
         self.output_dataset_info_file_path = 'src/outputs/datasets/classification/output_dataset_info.txt'
@@ -39,11 +39,12 @@ class ClfDataOperations:
         print(f"Data analysis saved in file '{file_path}'.")
 
     def filterData(self):
+        # Remove benign records
         if 'Label' in self.df.columns:
             self.df = self.df[self.df['Label'] != 'Benign']
         else:
             print("Warning: Column 'Label' not found in data.")
-
+        
         selected_columns = [
             'TotBytes',
             'SrcBytes',
@@ -61,7 +62,7 @@ class ClfDataOperations:
             'AckDat',
             'Seq',
             'Proto',
-            'Attack Type'
+            'Attack Type' # Assuming 'Attack Type' is the label column for classification
         ]
 
         missing_columns = [col for col in selected_columns if col not in self.df.columns]

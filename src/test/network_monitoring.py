@@ -28,7 +28,7 @@ def keep_sudo_alive(interval=30):
 keep_sudo_alive()
 
 eve_log_path = "/var/log/suricata/eve.json"
-API_PREDICT_URL = "http://10.0.0.191:5000/predict"
+API_PREDICT_URL = "http://10.0.0.239:5000/predict"
 
 output_dir  = "api"
 output_file = "predictions.csv"
@@ -198,5 +198,5 @@ async def follow_eve_json_optimized(file_path):
                 continue
 
 if __name__ == "__main__":
-    logging.info("Ral-time Suricata log monitoring is starting...")
+    logging.info("Real-time Suricata log monitoring is starting...")
     asyncio.run(follow_eve_json_optimized(eve_log_path))

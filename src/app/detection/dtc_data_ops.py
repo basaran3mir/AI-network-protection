@@ -4,7 +4,7 @@ import pandas as pd
 class DtcDataOperations:
 
     def __init__(self):
-        self.input_dataset_file_path = 'src/res/datasets/combined.csv'
+        self.input_dataset_file_path = 'src/res/datasets/combined.csv' #raw dataset path
         self.input_dataset_info_file_path = 'src/outputs/datasets/detection/input_dataset_info.txt'
         self.output_dataset_file_path = 'src/outputs/datasets/detection/combined_output.csv'
         self.output_dataset_info_file_path = 'src/outputs/datasets/detection/output_dataset_info.txt'
@@ -56,7 +56,7 @@ class DtcDataOperations:
             'AckDat',
             'Seq',
             'Proto',
-            'Label'
+            'Label' # Assuming 'Label' is the label column for detection
         ]
 
         missing_columns = [col for col in selected_columns if col not in self.df.columns]
