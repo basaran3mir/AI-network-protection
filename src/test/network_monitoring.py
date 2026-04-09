@@ -12,8 +12,8 @@ from typing import Any, Dict, Optional
 import aiofiles
 import aiohttp
 
-from ai_rules_runner import apply_rules
-from save_rules import save_changes
+#from ai_rules_runner import apply_rules
+#from save_rules import save_changes
 
 EVE_LOG_PATH = "/var/log/suricata/eve.json"
 API_PREDICT_URL = "http://10.0.0.239:5000/predict"
@@ -183,8 +183,8 @@ def process_api_result(result: Dict[str, Any], local_prefix: str) -> None:
                 writer.writerow([src, dst, attack])
 
             if external_ip:
-                apply_rules(external_ip, attack)
-                save_changes()
+                #apply_rules(external_ip, attack)
+                #save_changes()
                 logging.info(
                     "Savunma kuralı uygulandı: dış IP=%s, saldırı=%s",
                     external_ip,
