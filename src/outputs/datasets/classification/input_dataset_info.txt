@@ -1,7 +1,7 @@
 General Dataset Information
-Total number of malicious records: 1215890
+Total number of records: 1215890
 
-Attack Type Distribution
+Label Distribution
 Benign: 477737 (39.29%)
 UDPFlood: 457340 (37.61%)
 HTTPFlood: 140812 (11.58%)

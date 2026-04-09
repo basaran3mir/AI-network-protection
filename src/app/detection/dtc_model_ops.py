@@ -162,3 +162,7 @@ class DtcModelOperations:
 
     def predict_proba(self, X):
         return self.model.predict_proba(X)
+    
+if __name__ == "__main__":
+    dtc_ops = DtcModelOperations()
+    dtc_ops.train_model()
