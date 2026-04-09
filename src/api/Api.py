@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -17,6 +18,8 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     level=logging.INFO,
 )
+
+DEBUG_REQUESTS = os.getenv("DEBUG_REQUESTS", "1").lower() in {"1", "true", "yes", "on"}
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.join(current_dir, "..")
@@ -36,7 +39,6 @@ proto_encoder = joblib.load("src/outputs/encoders/shared_proto_encoder.pkl")
 detection_label_encoder = joblib.load("src/outputs/encoders/dtc_label_encoder.pkl")
 classification_label_encoder = joblib.load("src/outputs/encoders/clf_label_encoder.pkl")
 
-# Modelin eğitildiği veri seti ile birebir aynı feature sırası
 MODEL_COLUMNS = [
     "Proto",
     "Dur",
@@ -91,6 +93,64 @@ def retrain_models():
 scheduler = BackgroundScheduler()
 scheduler.add_job(retrain_models, "cron", hour=4, minute=0, second=10)
 scheduler.start()
+
+
+def debug_request_info(request_id: str, payload: Dict[str, Any] | None) -> None:
+    if not DEBUG_REQUESTS:
+        return
+
+    interesting_headers = {
+        k: v
+        for k, v in request.headers.items()
+        if k.lower() in {
+            "host",
+            "content-type",
+            "content-length",
+            "user-agent",
+            "x-forwarded-for",
+            "x-real-ip",
+        }
+    }
+
+    logging.info(
+        "[%s] Request debug -> remote_addr=%s access_route=%s method=%s path=%s headers=%s",
+        request_id,
+        request.remote_addr,
+        list(request.access_route),
+        request.method,
+        request.path,
+        interesting_headers,
+    )
+
+    if not payload:
+        logging.info("[%s] Payload is empty or invalid JSON.", request_id)
+        return
+
+    payload_keys = list(payload.keys())
+    data_list = payload.get("data", [])
+    first_record = data_list[0] if isinstance(data_list, list) and data_list else {}
+
+    first_record_summary = {
+        "event_type": first_record.get("event_type"),
+        "src_ip": first_record.get("src_ip"),
+        "dest_ip": first_record.get("dest_ip"),
+        "proto": first_record.get("proto"),
+        "flow.start": first_record.get("flow.start"),
+        "flow.end": first_record.get("flow.end"),
+        "flow.bytes_toserver": first_record.get("flow.bytes_toserver"),
+        "flow.bytes_toclient": first_record.get("flow.bytes_toclient"),
+        "flow.pkts_toserver": first_record.get("flow.pkts_toserver"),
+        "flow.pkts_toclient": first_record.get("flow.pkts_toclient"),
+    }
+
+    logging.info(
+        "[%s] Payload debug -> keys=%s local_prefix=%s record_count=%s first_record=%s",
+        request_id,
+        payload_keys,
+        payload.get("local_prefix"),
+        len(data_list) if isinstance(data_list, list) else "invalid",
+        first_record_summary,
+    )
 
 
 def validate_request_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
@@ -158,7 +218,6 @@ def semantic_cleaning(raw_df: pd.DataFrame) -> pd.DataFrame:
 def map_suricata_to_model_features(raw_df: pd.DataFrame) -> pd.DataFrame:
     df = raw_df.copy()
 
-    # Temel alanlar
     df["Proto"] = df["proto"].astype(str).str.lower()
 
     df["Dur"] = df.apply(
@@ -174,67 +233,54 @@ def map_suricata_to_model_features(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["DstPkts"] = df["flow.pkts_toclient"].apply(safe_numeric)
     df["TotPkts"] = df["SrcPkts"] + df["DstPkts"]
 
-    # Türetilmiş alanlar
     df["BytesPerSec"] = df.apply(
         lambda row: row["TotBytes"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["PktsPerSec"] = df.apply(
         lambda row: row["TotPkts"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["SrcBytesPerSec"] = df.apply(
         lambda row: row["SrcBytes"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["DstBytesPerSec"] = df.apply(
         lambda row: row["DstBytes"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["SrcPktsPerSec"] = df.apply(
         lambda row: row["SrcPkts"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["DstPktsPerSec"] = df.apply(
         lambda row: row["DstPkts"] / row["Dur"] if row["Dur"] > 0 else 0.0,
         axis=1,
     )
-
     df["MeanPktSz"] = df.apply(
         lambda row: row["TotBytes"] / row["TotPkts"] if row["TotPkts"] > 0 else 0.0,
         axis=1,
     )
-
     df["SrcMeanPktSz"] = df.apply(
         lambda row: row["SrcBytes"] / row["SrcPkts"] if row["SrcPkts"] > 0 else 0.0,
         axis=1,
     )
-
     df["DstMeanPktSz"] = df.apply(
         lambda row: row["DstBytes"] / row["DstPkts"] if row["DstPkts"] > 0 else 0.0,
         axis=1,
     )
-
     df["SrcByteShare"] = df.apply(
         lambda row: row["SrcBytes"] / row["TotBytes"] if row["TotBytes"] > 0 else 0.0,
         axis=1,
     )
-
     df["DstByteShare"] = df.apply(
         lambda row: row["DstBytes"] / row["TotBytes"] if row["TotBytes"] > 0 else 0.0,
         axis=1,
     )
-
     df["SrcPktShare"] = df.apply(
         lambda row: row["SrcPkts"] / row["TotPkts"] if row["TotPkts"] > 0 else 0.0,
         axis=1,
     )
-
     df["DstPktShare"] = df.apply(
         lambda row: row["DstPkts"] / row["TotPkts"] if row["TotPkts"] > 0 else 0.0,
         axis=1,
@@ -313,25 +359,43 @@ def merge_with_previous_day():
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    request_id = uuid.uuid4().hex[:8]
     start_time = time.time()
     payload = request.get_json(silent=True)
 
+    debug_request_info(request_id, payload)
+
     is_valid, error_message = validate_request_payload(payload)
     if not is_valid:
+        logging.warning("[%s] Invalid payload: %s", request_id, error_message)
         return jsonify({"error": error_message}), 400
 
     try:
         raw_input_df = pd.DataFrame(payload["data"])
         local_prefix = payload["local_prefix"].strip()
         append_data(raw_input_df, "will_append_raw.csv")
+
+        logging.info(
+            "[%s] Raw dataframe created -> shape=%s columns=%s",
+            request_id,
+            raw_input_df.shape,
+            list(raw_input_df.columns),
+        )
     except Exception as exc:
+        logging.error("[%s] Data transform error: %s", request_id, exc, exc_info=True)
         return jsonify({"error": f"Data transform error: {exc}"}), 400
 
     clean_df = semantic_cleaning(raw_input_df)
+    logging.info(
+        "[%s] After semantic_cleaning -> shape=%s",
+        request_id,
+        clean_df.shape,
+    )
+
     if clean_df.empty:
+        logging.info("[%s] clean_df is empty. Returning empty records.", request_id)
         return jsonify({"records": [], "duration": time.time() - start_time})
 
-    # Tamamı local-local ise benign döndür
     all_local = clean_df.apply(
         lambda row: str(row["src_ip"]).startswith(local_prefix)
         and str(row["dest_ip"]).startswith(local_prefix),
@@ -339,6 +403,8 @@ def predict():
     )
 
     if all(all_local):
+        logging.info("[%s] All records are local-local. Returning Benign.", request_id)
+
         records = []
         for i, row in clean_df.iterrows():
             records.append(
@@ -353,19 +419,40 @@ def predict():
                     "classification_risk": None,
                 }
             )
+
         return jsonify({"records": records, "duration": time.time() - start_time})
 
     try:
         model_feature_df = map_suricata_to_model_features(clean_df)
+        logging.info(
+            "[%s] Feature dataframe -> shape=%s columns=%s",
+            request_id,
+            model_feature_df.shape,
+            list(model_feature_df.columns),
+        )
+
         inference_df = encode_model_inputs(model_feature_df)
+        logging.info(
+            "[%s] Encoded inference dataframe -> shape=%s",
+            request_id,
+            inference_df.shape,
+        )
     except Exception as exc:
-        logging.error("Feature preparation error: %s", exc, exc_info=True)
+        logging.error("[%s] Feature preparation error: %s", request_id, exc, exc_info=True)
         return jsonify({"error": f"Feature preparation error: {exc}"}), 500
 
-    # Detection
     detection_preds = dtc_model_ops.predict(inference_df)
     detection_probs = dtc_model_ops.predict_proba(inference_df)
     detection_confs = detection_probs.max(axis=1).tolist()
+
+    malicious_count = sum(1 for p in detection_preds if p == 1)
+    logging.info(
+        "[%s] Detection completed -> total=%s malicious=%s benign=%s",
+        request_id,
+        len(detection_preds),
+        malicious_count,
+        len(detection_preds) - malicious_count,
+    )
 
     processed_for_feedback = inference_df.copy()
     processed_for_feedback["Label"] = detection_preds
@@ -379,8 +466,8 @@ def predict():
             to_save["Label"].astype(int)
         )
         append_data(to_save, "will_append_processed.csv")
+        logging.info("[%s] Saved high-confidence rows -> count=%s", request_id, len(to_save))
 
-    # Classification
     clean_for_clf = processed_for_feedback.drop(columns=["Label", "Label_Score"])
     malicious_idxs = [i for i, pred in enumerate(detection_preds) if pred == 1]
     malicious_df = clean_for_clf.iloc[malicious_idxs]
@@ -389,9 +476,15 @@ def predict():
         classification_preds = clf_model_ops.predict(malicious_df)
         classification_probs = clf_model_ops.predict_proba(malicious_df)
         classification_confs = classification_probs.max(axis=1).tolist()
+        logging.info(
+            "[%s] Classification completed -> malicious_samples=%s",
+            request_id,
+            len(classification_preds),
+        )
     else:
         classification_preds = []
         classification_confs = []
+        logging.info("[%s] No malicious sample for classification.", request_id)
 
     records = []
     cls_idx = 0
@@ -426,8 +519,10 @@ def predict():
         )
 
     duration = time.time() - start_time
+    logging.info("[%s] Request completed in %.4f sec", request_id, duration)
+
     return jsonify({"records": records, "duration": duration})
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5005)
