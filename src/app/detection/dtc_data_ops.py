@@ -120,7 +120,7 @@ class DtcDataOperations:
         self.df["DstPktShare"] = (dst_pkts / tot_pkts_pos).fillna(0.0)
 
     def filterData(self) -> pd.DataFrame:
-        # İstenirse belirli saldırı tipi dışarı alınır
+        # UDPSCAN exclude
         if "Attack Type" in self.df.columns:
             self.df = self.df[self.df["Attack Type"] != "UDPScan"].copy()
 

@@ -120,9 +120,9 @@ class ClfDataOperations:
         self.df["DstPktShare"] = (dst_pkts / tot_pkts_pos).fillna(0.0)
 
     def filterData(self) -> pd.DataFrame:
-        # İstenirse belirli saldırı tipi dışarı alınır
+        # Benign and UDPSCAN exclude
         if "Attack Type" in self.df.columns:
-            self.df = self.df[self.df["Attack Type"] != "Benign"].copy()
+            self.df = self.df[~self.df["Attack Type"].isin(["Benign", "UDPScan"])].copy()
 
         self._prepare_base_columns()
         self._derive_features()
